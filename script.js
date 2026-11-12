@@ -243,5 +243,56 @@ function sparkle(x,y){
 addEventListener("mousemove",e=>sparkle(e.clientX,e.clientY));
 addEventListener("touchmove",e=>{const t=e.touches[0]; if(t) sparkle(t.clientX,t.clientY);},{passive:true});
 
+/* ======== BACKGROUND AUDIO ======== */
+const bgAudio = document.getElementById("bg-music");
+if (bgAudio) {
+  bgAudio.loop = true;
+  let wasPlayingBeforeHidden = false;
+
+  function attemptPlay() {
+    const playPromise = bgAudio.play();
+    if (playPromise !== undefined) {
+      playPromise.then(() => {
+        removeInteractionListeners();
+      }).catch(() => {
+        // Autoplay policy prevented immediate playback; waiting for first interaction
+      });
+    }
+  }
+
+  function handleInteraction() {
+    attemptPlay();
+  }
+
+  const events = ["click", "touchstart", "touchend", "pointerdown", "keydown", "scroll"];
+  function addInteractionListeners() {
+    events.forEach(ev => window.addEventListener(ev, handleInteraction, { passive: true }));
+  }
+  function removeInteractionListeners() {
+    events.forEach(ev => window.removeEventListener(ev, handleInteraction));
+  }
+
+  addInteractionListeners();
+  attemptPlay();
+
+  // Play only while page is active (pause when hidden/tab switched, resume when active)
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      if (!bgAudio.paused) {
+        wasPlayingBeforeHidden = true;
+        bgAudio.pause();
+      }
+    } else {
+      if (wasPlayingBeforeHidden || bgAudio.paused) {
+        attemptPlay();
+      }
+    }
+  });
+
+  window.addEventListener("pagehide", () => {
+    bgAudio.pause();
+  });
+}
+
 /* start */
 goTo(0);
